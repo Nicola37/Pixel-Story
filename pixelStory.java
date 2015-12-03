@@ -5,7 +5,7 @@ class at the University of Florida. It is a pixel art and animation
 creator which allows users to make pixel art and use it to create stories.
 
 Thanks to Dave Small who taught us how to do most of this,
-as well as anonymous oracle forum people for helping me figure out gifs in java.
+as well as anonymous java-gaming.org forum people, for helping me implement animated gifs in java.
 
 by Nicola Frachesen*/
 
@@ -22,6 +22,9 @@ import java.util.ArrayList;
 import java.lang.StringBuilder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.imageio.metadata.*;
+import javax.imageio.stream.*;
+import org.w3c.dom.Node;
 
 public class pixelStory{
   //The size of the window.
@@ -68,6 +71,7 @@ class ImageFrame extends JFrame{
   JButton gridButton;
   JButton brushButton;
   JButton eraserButton;
+  JButton getColorButton;
   JButton smallButton;
   JButton bigButton;
 
@@ -98,6 +102,7 @@ class ImageFrame extends JFrame{
   int[][] pixels;
   boolean grid;
   boolean eraser;
+  boolean getColor;
   Color gridColor;
   int red;
   int green;
@@ -132,6 +137,7 @@ class ImageFrame extends JFrame{
     gridButton = new JButton("Grid On/Off");
     brushButton = new JButton("Brush");
     eraserButton = new JButton("Eraser");
+    getColorButton = new JButton("Get Color");
     smallButton = new JButton("-");
     bigButton = new JButton("+");
 
@@ -162,6 +168,7 @@ class ImageFrame extends JFrame{
     pixels = null;
     grid = false;
     eraser = false;
+    getColor = false;
     gridColor = new Color(0, 0, 0, 100);
     red = 0;
     green = 0;
@@ -182,6 +189,7 @@ class ImageFrame extends JFrame{
     buttonPanel.add(gridButton);
     buttonPanel.add(brushButton);
     buttonPanel.add(eraserButton);
+    buttonPanel.add(getColorButton);
     buttonPanel.add(smallButton);
     buttonPanel.add(bigButton);
 
@@ -224,51 +232,68 @@ class ImageFrame extends JFrame{
     //Adds a mouseListener to see when the mouse is pressed.
     canvas.addMouseListener(new MouseAdapter(){
       public void mousePressed( MouseEvent event ){
-        if (art == true){
-          if (grid == true){
-            drawGrid();
-          }
-          //Get the x and y position within an accuracy of 8.
-          int x = (event.getPoint().x - (event.getPoint().x % pixelSize));
-          int y = (event.getPoint().y - (event.getPoint().y % pixelSize));
-          
-          if (!eraser){
-            for (int i = 0; i < brushSize; i++){
-              for (int j = 0; j < brushSize; j++){
+        if (art){
+          if (getColor){
+            //Get the x and y position.
+            int x = (event.getPoint().x - (event.getPoint().x % pixelSize));
+            int y = (event.getPoint().y - (event.getPoint().y % pixelSize));
 
-                if(((x/pixelSize)+i < width) && ((y/pixelSize)+j < height)){
-                  pixels[(x/pixelSize)+i][(y/pixelSize)+j] = (0xFF000000 | (red << 16) | (green << 8) | blue);
-                }
+            int gotColor = pixels[(x/pixelSize)][(y/pixelSize)];
+            red = (gotColor >>> 16) & 0x000000FF;
+            green = (gotColor >>> 8) & 0x000000FF;
+            blue = gotColor & 0x000000FF;
 
-                //Set the color and draw the cell.
-                g2d.setColor(new Color(pixels[x/pixelSize][y/pixelSize]));
-                g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
-              }
-            }
+            currentColor.setBackground(new Color(gotColor));
+            redSlider.setValue(red);
+            greenSlider.setValue(green);
+            blueSlider.setValue(blue);
           }
           else{
-            for (int i = 0; i < brushSize; i++){
-              for (int j = 0; j < brushSize; j++){
+            if (grid){
+              drawGrid();
+            }
+            //Get the x and y position.
+            int x = (event.getPoint().x - (event.getPoint().x % pixelSize));
+            int y = (event.getPoint().y - (event.getPoint().y % pixelSize));
+            
+            if (!eraser){
+              for (int i = 0; i < brushSize; i++){
+                for (int j = 0; j < brushSize; j++){
 
-                if(((x/pixelSize)+i < width) && ((y/pixelSize)+j < height)){
-                  pixels[(x/pixelSize)+i][(y/pixelSize)+j] = 0xFFFFFFFF;
+                  if(((x/pixelSize)+i < width) && ((y/pixelSize)+j < height)){
+                    pixels[(x/pixelSize)+i][(y/pixelSize)+j] = (0xFF000000 | (red << 16) | (green << 8) | blue);
+                  }
+
+                  //Set the color and draw the cell.
+                  g2d.setColor(new Color(pixels[x/pixelSize][y/pixelSize]));
+                  g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
                 }
-
-                //Set the color and draw the cell.
-                g2d.setColor(new Color(pixels[x/pixelSize][y/pixelSize]));
-                g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
               }
             }
-          }
+            else{
+              for (int i = 0; i < brushSize; i++){
+                for (int j = 0; j < brushSize; j++){
 
-          if (grid == true){
-            drawGrid();
-          }
+                  if(((x/pixelSize)+i < width) && ((y/pixelSize)+j < height)){
+                    pixels[(x/pixelSize)+i][(y/pixelSize)+j] = 0xFFFFFFFF;
+                  }
 
-          displayBufferedImage(image);
+                  //Set the color and draw the cell.
+                  g2d.setColor(new Color(pixels[x/pixelSize][y/pixelSize]));
+                  g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
+                }
+              }
+            }
+
+            if (grid == true){
+              drawGrid();
+            }
+
+            displayBufferedImage(image);
+          }
         }
         else{
-          currentObject = objectCheck(event.getX(), event.getY());
+            currentObject = objectCheck(event.getX(), event.getY());
         }
       }
     });
@@ -301,45 +326,47 @@ class ImageFrame extends JFrame{
     canvas.addMouseMotionListener(new MouseAdapter(){
       public void mouseMoved( MouseEvent event ){
         if (art == true){
-          if (grid == true){
-            drawGrid();
-          }
-
-          for (int i = 0; i < width; i++){
-            for (int j = 0; j < height; j++){
-              g2d.setColor(new Color(pixels[i][j]));
-              g2d.fillRect(i*pixelSize, j*pixelSize, pixelSize, pixelSize);
+          if (!getColor){
+            if (grid){
+              drawGrid();
             }
-          }
 
-          //Get the x and y position within an accuracy of 8.
-          int x = (event.getPoint().x - (event.getPoint().x % pixelSize));
-          int y = (event.getPoint().y - (event.getPoint().y % pixelSize));
-          
-          if (!eraser){
-            for (int i = 0; i < brushSize; i++){
-              for (int j = 0; j < brushSize; j++){
-                //Set the color and draw the cell.
-                g2d.setColor(new Color(0xFF000000 | (red << 16) | (green << 8) | blue));
-                g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
+            for (int i = 0; i < width; i++){
+              for (int j = 0; j < height; j++){
+                g2d.setColor(new Color(pixels[i][j]));
+                g2d.fillRect(i*pixelSize, j*pixelSize, pixelSize, pixelSize);
               }
             }
-          }
-          else{
-            for (int i = 0; i < brushSize; i++){
-              for (int j = 0; j < brushSize; j++){
-                //Set the color and draw the cell.
-                g2d.setColor(new Color(0xFFFFFFFF));
-                g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
+
+            //Get the x and y position within an accuracy of 8.
+            int x = (event.getPoint().x - (event.getPoint().x % pixelSize));
+            int y = (event.getPoint().y - (event.getPoint().y % pixelSize));
+            
+            if (!eraser){
+              for (int i = 0; i < brushSize; i++){
+                for (int j = 0; j < brushSize; j++){
+                  //Set the color and draw the cell.
+                  g2d.setColor(new Color(0xFF000000 | (red << 16) | (green << 8) | blue));
+                  g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
+                }
               }
             }
-          }
+            else{
+              for (int i = 0; i < brushSize; i++){
+                for (int j = 0; j < brushSize; j++){
+                  //Set the color and draw the cell.
+                  g2d.setColor(new Color(0xFFFFFFFF));
+                  g2d.fillRect(x+(i*pixelSize), y+(j*pixelSize), pixelSize, pixelSize);
+                }
+              }
+            }
 
-          if (grid == true){
-            drawGrid();
-          }
+            if (grid){
+              drawGrid();
+            }
 
-          displayBufferedImage(image);
+            displayBufferedImage(image);
+          }
         }    
       }
     });
@@ -347,8 +374,8 @@ class ImageFrame extends JFrame{
     //Adds a mouseListener to see when the mouse is dragged.
     canvas.addMouseMotionListener(new MouseAdapter(){
       public void mouseDragged( MouseEvent event ){
-        if (art){
-                    if (grid == true){
+        if (art && !getColor){
+          if (grid == true){
             drawGrid();
           }
           //Get the x and y position within an accuracy of 8.
@@ -434,13 +461,21 @@ class ImageFrame extends JFrame{
 
     brushButton.addActionListener( new ActionListener(){
       public void actionPerformed( ActionEvent event ){
+        getColor = false;
         eraser = false;
       }
     });
 
     eraserButton.addActionListener( new ActionListener(){
       public void actionPerformed( ActionEvent event ){
+        getColor = false;
         eraser = true;
+      }
+    });
+
+    getColorButton.addActionListener( new ActionListener(){
+      public void actionPerformed( ActionEvent event ){
+        getColor = true;
       }
     });
 
@@ -735,6 +770,18 @@ class ImageFrame extends JFrame{
       }
     });
 
+    JMenuItem saveStoryImageItem = new JMenuItem("Save Current Frame as an Image");
+    saveStoryImageItem.addActionListener(new ActionListener(){
+      public void actionPerformed(ActionEvent event){
+        if (art == true){
+          wrongButton(art);
+        }
+        else{
+          saveArtImage();
+        }
+      }
+    });
+
     JMenuItem saveStoryMovieItem = new JMenuItem("Save Story as a gif");
     saveStoryMovieItem.addActionListener(new ActionListener(){
       public void actionPerformed(ActionEvent event){
@@ -756,6 +803,7 @@ class ImageFrame extends JFrame{
     storyMenu.add(fpsItem);
     storyMenu.add(saveStoryItem);
     storyMenu.add(loadStoryItem);
+    storyMenu.add(saveStoryImageItem);
     storyMenu.add(saveStoryMovieItem);
   
     //Attach the menu to a menu bar.
@@ -956,8 +1004,12 @@ class ImageFrame extends JFrame{
 
     frames.get(currentFrame-1).background = imageInput;
 
+    image = new BufferedImage(imageInput.getWidth(), imageInput.getHeight()+100, BufferedImage.TYPE_INT_ARGB);
+    g2d = (Graphics2D) image.createGraphics();
+
     g2d.drawImage(imageInput, null, 0, 0);
     drawObjects(currentFrame-1);
+    setCurrentText(false);
     frames.get(currentFrame-1).fullImage = image;
 
     displayBufferedImage(image);
@@ -1189,7 +1241,8 @@ class ImageFrame extends JFrame{
         saveReader.readLine();
 
         currentLine = saveReader.readLine();
-        fps = Integer.parseInt(currentLine);
+        fps = Double.parseDouble(currentLine);
+        timer.setInitialDelay((int)((1.0/fps)*1000.0));
 
         currentLine = saveReader.readLine();
         numOfFrames = Integer.parseInt(currentLine);
@@ -1280,6 +1333,7 @@ class ImageFrame extends JFrame{
       }
       
       currentFrame = 1;
+      frameLabel.setText("1");
       image = frames.get(0).fullImage;
       g2d = (Graphics2D) image.createGraphics();
 
@@ -1288,7 +1342,23 @@ class ImageFrame extends JFrame{
   }
 
   public void saveStoryMovie(){
+    String fileName;
+    fileName = JOptionPane.showInputDialog("What would you like the name of the file to be? (Please do not enter the file extension. e.g. 'apple' not 'apple.gif')");
+
+    ArrayList<GifFrame> images = new ArrayList<GifFrame>();
+    for (int i = 0; i < frames.size(); i++){
+      images.add(new GifFrame(frames.get(i).fullImage, (long) ((1/fps)*1000)));
+    }
     
+    try{
+      OutputStream oS = new FileOutputStream(fileName+".gif");
+    
+      ImageUtil gifMaker = new ImageUtil();
+    
+      gifMaker.saveAnimatedGIF(oS, images, 0);
+    }
+    catch (Exception e){
+    }
   }
 
   public void initializeFrame(){
@@ -1444,15 +1514,32 @@ class ImageFrame extends JFrame{
           imageInput = frames.get(currentFrame-1).background;
         }
 
-        //int fg = JOptionPane.showConfirmDialog(this, "Would you like to keep the same foreground objects?", "Foreground", JOptionPane.YES_NO_OPTION);
-
         currentFrame++;
         frameLabel.setText(Integer.toString(currentFrame));
         initializeFrame();
 
+        int fg = JOptionPane.showConfirmDialog(this, "Would you like to keep the same foreground objects?", "Foreground", JOptionPane.YES_NO_OPTION);
+        if (fg == 0){
+          for (int i = 0; i < frames.get(currentFrame-2).foregroundObjects.size(); i++){
+            frames.get(currentFrame-1).foregroundObjects.add(frames.get(currentFrame-2).foregroundObjects.get(i));
+            frames.get(currentFrame-1).foregroundObjectNames.add(frames.get(currentFrame-2).foregroundObjectNames.get(i));
+            frames.get(currentFrame-1).foregroundObjectSize.add(frames.get(currentFrame-2).foregroundObjectSize.get(i));
+            frames.get(currentFrame-1).foregroundObjectWidth.add(frames.get(currentFrame-2).foregroundObjectWidth.get(i));
+            frames.get(currentFrame-1).foregroundObjectHeight.add(frames.get(currentFrame-2).foregroundObjectHeight.get(i));
+            frames.get(currentFrame-1).foregroundObjectX.add(frames.get(currentFrame-2).foregroundObjectX.get(i));
+            frames.get(currentFrame-1).foregroundObjectY.add(frames.get(currentFrame-2).foregroundObjectY.get(i));
+          }
+        }
+
+        drawObjects(currentFrame-1);
+
         int text = JOptionPane.showConfirmDialog(this, "Would you like to keep the same text?", "Text", JOptionPane.YES_NO_OPTION);
         if (text == 1){
           setCurrentText(true);
+        }
+        else{
+          frames.get(currentFrame-1).text = frames.get(currentFrame-2).text;
+          setCurrentText(false);
         }
       }
     }
@@ -1633,4 +1720,123 @@ class StoryFrame{
     }
     return false;
   }
+}
+
+class GifFrame
+{
+   public static final String NONE                = "none";
+   public static final String DO_NOT_DISPOSE      = "doNotDispose";
+   public static final String RESTORE_TO_BGCOLOR  = "restoreToBackgroundColor";
+   public static final String RESTORE_TO_PREVIOUS = "restoreToPrevious";
+
+   public final BufferedImage img;
+   public final long          delay; // in millis
+   public final String        disposalMethod;
+
+   public GifFrame(BufferedImage img, long delay)
+   {
+      this(img, delay, NONE);
+   }
+
+   public GifFrame(BufferedImage img, long delay, String disposalMethod)
+   {
+      this.img = img;
+      this.delay = delay;
+      this.disposalMethod = disposalMethod;
+   }
+}
+
+class ImageUtil
+{
+   public static BufferedImage convertRGBAToGIF(BufferedImage src, int transColor)
+   {
+      BufferedImage dst = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_BYTE_INDEXED);
+      Graphics g = dst.getGraphics();
+      g.setColor(new Color(transColor));
+      g.fillRect(0, 0, dst.getWidth(), dst.getHeight());
+      {
+         IndexColorModel indexedModel = (IndexColorModel) dst.getColorModel();
+         WritableRaster raster = dst.getRaster();
+         int sample = raster.getSample(0, 0, 0);
+         int size = indexedModel.getMapSize();
+         byte[] rr = new byte[size];
+         byte[] gg = new byte[size];
+         byte[] bb = new byte[size];
+         indexedModel.getReds(rr);
+         indexedModel.getGreens(gg);
+         indexedModel.getBlues(bb);
+         IndexColorModel newModel = new IndexColorModel(8, size, rr, gg, bb, sample);
+         dst = new BufferedImage(newModel, raster, dst.isAlphaPremultiplied(), null);
+      }
+      dst.createGraphics().drawImage(src, 0, 0, null);
+      return dst;
+   }
+
+   public static void saveAnimatedGIF(OutputStream out, ArrayList<GifFrame> frames, int loopCount) throws Exception
+   {
+      ImageWriter iw = ImageIO.getImageWritersByFormatName("gif").next();
+
+      ImageOutputStream ios = ImageIO.createImageOutputStream(out);
+      iw.setOutput(ios);
+      iw.prepareWriteSequence(null);
+
+      int p = 0;
+      for (GifFrame frame : frames)
+      {
+         ImageWriteParam iwp = iw.getDefaultWriteParam();
+         IIOMetadata metadata = iw.getDefaultImageMetadata(new ImageTypeSpecifier(frame.img), iwp);
+         ImageUtil.configureGIFFrame(metadata, String.valueOf(frame.delay / 10L), p++, frame.disposalMethod, loopCount);
+         IIOImage ii = new IIOImage(frame.img, null, metadata);
+         iw.writeToSequence(ii, null);
+      }
+
+      iw.endWriteSequence();
+      ios.close();
+   }
+
+   private static void configureGIFFrame(IIOMetadata meta, String delayTime, int imageIndex, String disposalMethod, int loopCount)
+   {
+      String metaFormat = meta.getNativeMetadataFormatName();
+
+      if (!"javax_imageio_gif_image_1.0".equals(metaFormat))
+      {
+         throw new IllegalArgumentException("Unfamiliar gif metadata format: " + metaFormat);
+      }
+
+      Node root = meta.getAsTree(metaFormat);
+
+      Node child = root.getFirstChild();
+      while (child != null)
+      {
+         if ("GraphicControlExtension".equals(child.getNodeName()))
+            break;
+         child = child.getNextSibling();
+      }
+
+      IIOMetadataNode gce = (IIOMetadataNode) child;
+      gce.setAttribute("userDelay", "FALSE");
+      gce.setAttribute("delayTime", delayTime);
+      gce.setAttribute("disposalMethod", disposalMethod);
+
+      if (imageIndex == 0)
+      {
+         IIOMetadataNode aes = new IIOMetadataNode("ApplicationExtensions");
+         IIOMetadataNode ae = new IIOMetadataNode("ApplicationExtension");
+         ae.setAttribute("applicationID", "NETSCAPE");
+         ae.setAttribute("authenticationCode", "2.0");
+         byte[] uo = new byte[] { 0x1, (byte) (loopCount & 0xFF), (byte) ((loopCount >> 8) & 0xFF) };
+         ae.setUserObject(uo);
+         aes.appendChild(ae);
+         root.appendChild(aes);
+      }
+
+      try
+      {
+         meta.setFromTree(metaFormat, root);
+      }
+      catch (IIOInvalidTreeException e)
+      {
+         throw new Error(e);
+      }
+   }
 }
