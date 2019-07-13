@@ -5,7 +5,7 @@ To use the application, please ensure that you have Java installed on your compu
 
 #### Interface:
 
-<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/ArtMode.png" width="169" height="193" />
+<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/ArtMode.png" width="226" height="258" />
 
 <img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/StoryMode.png" width="362" height="234" />
 
