@@ -3,14 +3,14 @@ This is a pixel art and animation creator with a focus on customization and stor
 
 To use the application, please ensure that you have Java installed on your computer and run the executable pixelStory.jar file.
 
-####Interface:
+#### Interface:
 
-![alt text](https://raw.githubusercontent.com/nicola37/Pixel-Story/master/ArtMode.png)
+<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/ArtMode.png" width="169" height="193" />
 
-![alt text](https://raw.githubusercontent.com/nicola37/Pixel-Story/master/StoryMode.png)
+<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/StoryMode.png" width="362" height="234" />
 
 
-####Sample gif made in Pixel Story:
+#### Sample gif made in Pixel Story:
 
 ![alt text](https://raw.githubusercontent.com/nicola37/Pixel-Story/master/MarioStory.gif)
 
