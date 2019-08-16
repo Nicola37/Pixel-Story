@@ -7,9 +7,9 @@ To learn more about how to use this application, please consult the included Use
 
 #### Mockups:
 
-<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/media/Mockup-Art.jpg" width="573" height="438" />
+<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/media/Mockup-Art.JPG" width="573" height="438" />
 
-<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/media/Mockup-Story.jpg" width="573" height="415" />
+<img src="https://raw.githubusercontent.com/nicola37/Pixel-Story/master/media/Mockup-Story.JPG" width="573" height="415" />
 
 
 #### Final Interface:
